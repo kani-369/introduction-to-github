@@ -1,281 +1,350 @@
-// Product data
+// Product Data
 const products = [
     {
         id: 1,
-        name: "Wireless Headphones",
-        price: 79.99,
-        rating: 4.5,
-        emoji: "🎧",
-        category: "Electronics"
+        name: "Premium Wireless Headphones",
+        price: 299.99,
+        category: "electronics",
+        image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop",
+        rating: 4.8,
+        reviews: 256,
+        badge: "Best Seller"
     },
     {
         id: 2,
-        name: "Smart Watch",
-        price: 199.99,
-        rating: 4.8,
-        emoji: "⌚",
-        category: "Electronics"
+        name: "Smart Watch Pro",
+        price: 449.99,
+        category: "electronics",
+        image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop",
+        rating: 4.7,
+        reviews: 189,
+        badge: "New"
     },
     {
         id: 3,
-        name: "Running Shoes",
-        price: 89.99,
-        rating: 4.6,
-        emoji: "👟",
-        category: "Fashion"
+        name: "Designer Leather Bag",
+        price: 189.99,
+        category: "fashion",
+        image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=500&h=500&fit=crop",
+        rating: 4.9,
+        reviews: 342,
+        badge: ""
     },
     {
         id: 4,
-        name: "Laptop Stand",
-        price: 49.99,
-        rating: 4.3,
-        emoji: "💻",
-        category: "Electronics"
+        name: "Minimalist Sneakers",
+        price: 129.99,
+        category: "fashion",
+        image: "https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=500&h=500&fit=crop",
+        rating: 4.6,
+        reviews: 178,
+        badge: "Sale"
     },
     {
         id: 5,
-        name: "Coffee Maker",
-        price: 129.99,
-        rating: 4.7,
-        emoji: "☕",
-        category: "Home & Garden"
+        name: "Modern Table Lamp",
+        price: 79.99,
+        category: "home",
+        image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=500&h=500&fit=crop",
+        rating: 4.5,
+        reviews: 95,
+        badge: ""
     },
     {
         id: 6,
-        name: "Yoga Mat",
-        price: 34.99,
-        rating: 4.4,
-        emoji: "🧘",
-        category: "Sports"
+        name: "Ergonomic Office Chair",
+        price: 399.99,
+        category: "home",
+        image: "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=500&h=500&fit=crop",
+        rating: 4.8,
+        reviews: 267,
+        badge: "Popular"
     },
     {
         id: 7,
-        name: "Backpack",
-        price: 59.99,
-        rating: 4.5,
-        emoji: "🎒",
-        category: "Fashion"
+        name: "Yoga Mat Premium",
+        price: 49.99,
+        category: "sports",
+        image: "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=500&h=500&fit=crop",
+        rating: 4.7,
+        reviews: 412,
+        badge: ""
     },
     {
         id: 8,
-        name: "Bluetooth Speaker",
-        price: 69.99,
-        rating: 4.6,
-        emoji: "🔊",
-        category: "Electronics"
+        name: "Professional Dumbbells Set",
+        price: 159.99,
+        category: "sports",
+        image: "https://images.unsplash.com/photo-1638536532686-d610adfc8e5c?w=500&h=500&fit=crop",
+        rating: 4.9,
+        reviews: 156,
+        badge: "Top Rated"
     }
 ];
 
-// Shopping cart
-let cart = [];
+// State
+let cart = JSON.parse(localStorage.getItem('cart')) || [];
+let currentCategory = 'all';
+let currentSort = 'default';
 
-// Initialize the website
+// DOM Elements
+const productsGrid = document.getElementById('productsGrid');
+const cartBtn = document.getElementById('cartBtn');
+const cartSidebar = document.getElementById('cartSidebar');
+const cartOverlay = document.getElementById('cartOverlay');
+const closeCart = document.getElementById('closeCart');
+const cartItems = document.getElementById('cartItems');
+const cartCount = document.getElementById('cartCount');
+const cartTotal = document.getElementById('cartTotal');
+const checkoutBtn = document.getElementById('checkoutBtn');
+const checkoutModal = document.getElementById('checkoutModal');
+const closeModal = document.getElementById('closeModal');
+const searchInput = document.getElementById('searchInput');
+const toast = document.getElementById('toast');
+const toastMsg = document.getElementById('toastMsg');
+
+// Initialize
 document.addEventListener('DOMContentLoaded', () => {
     renderProducts();
+    updateCart();
     setupEventListeners();
-    loadCartFromStorage();
 });
 
-// Render products to the page
-function renderProducts() {
-    const container = document.getElementById('products-container');
-    container.innerHTML = '';
-    
-    products.forEach(product => {
-        const productCard = document.createElement('div');
-        productCard.className = 'product-card';
-        productCard.innerHTML = `
-            <div class="product-image">${product.emoji}</div>
+// Render Products
+function renderProducts(searchTerm = '') {
+    let filtered = products.filter(p => {
+        const matchesCategory = currentCategory === 'all' || p.category === currentCategory;
+        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesCategory && matchesSearch;
+    });
+
+    // Sort
+    if (currentSort === 'price-low') {
+        filtered.sort((a, b) => a.price - b.price);
+    } else if (currentSort === 'price-high') {
+        filtered.sort((a, b) => b.price - a.price);
+    } else if (currentSort === 'name') {
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    productsGrid.innerHTML = filtered.map(product => `
+        <div class="product-card" data-id="${product.id}">
+            <div class="product-image">
+                <img src="${product.image}" alt="${product.name}">
+                ${product.badge ? `<span class="product-badge">${product.badge}</span>` : ''}
+                <div class="product-actions">
+                    <button class="action-btn" onclick="toggleWishlist(${product.id})">
+                        <i class="far fa-heart"></i>
+                    </button>
+                    <button class="action-btn" onclick="quickView(${product.id})">
+                        <i class="far fa-eye"></i>
+                    </button>
+                </div>
+            </div>
             <div class="product-info">
-                <h3>${product.name}</h3>
-                <div class="rating">${'★'.repeat(Math.floor(product.rating))}${'☆'.repeat(5 - Math.floor(product.rating))} ${product.rating}</div>
-                <div class="price">$${product.price.toFixed(2)}</div>
-                <button class="add-to-cart-btn" onclick="addToCart(${product.id})">Add to Cart</button>
+                <span class="product-category">${product.category}</span>
+                <h3 class="product-title">${product.name}</h3>
+                <div class="product-rating">
+                    <span class="stars">${getStars(product.rating)}</span>
+                    <span class="rating-count">(${product.reviews})</span>
+                </div>
+                <div class="product-footer">
+                    <span class="price">$${product.price.toFixed(2)}</span>
+                    <button class="add-to-cart" onclick="addToCart(${product.id})">
+                        <i class="fas fa-shopping-cart"></i> Add
+                    </button>
+                </div>
             </div>
-        `;
-        container.appendChild(productCard);
-    });
+        </div>
+    `).join('');
 }
 
-// Setup event listeners
-function setupEventListeners() {
-    // Cart modal
-    const cartIcon = document.querySelector('.cart-icon');
-    const modal = document.getElementById('cart-modal');
-    const closeBtn = document.querySelector('.close');
-    
-    cartIcon.addEventListener('click', () => {
-        modal.style.display = 'block';
-        renderCart();
-    });
-    
-    closeBtn.addEventListener('click', () => {
-        modal.style.display = 'none';
-    });
-    
-    window.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-    
-    // CTA button
-    const ctaButton = document.querySelector('.cta-button');
-    ctaButton.addEventListener('click', () => {
-        document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
-    });
-    
-    // Checkout button
-    const checkoutButton = document.querySelector('.checkout-button');
-    checkoutButton.addEventListener('click', checkout);
+// Get Stars
+function getStars(rating) {
+    const fullStars = Math.floor(rating);
+    const hasHalf = rating % 1 >= 0.5;
+    let stars = '';
+    for (let i = 0; i < fullStars; i++) stars += '<i class="fas fa-star"></i>';
+    if (hasHalf) stars += '<i class="fas fa-star-half-alt"></i>';
+    for (let i = fullStars + (hasHalf ? 1 : 0); i < 5; i++) stars += '<i class="far fa-star"></i>';
+    return stars;
 }
 
-// Add item to cart
-function addToCart(productId) {
-    const product = products.find(p => p.id === productId);
-    const existingItem = cart.find(item => item.id === productId);
-    
-    if (existingItem) {
-        existingItem.quantity++;
+// Add to Cart
+function addToCart(id) {
+    const product = products.find(p => p.id === id);
+    const existing = cart.find(item => item.id === id);
+
+    if (existing) {
+        existing.quantity++;
     } else {
-        cart.push({
-            ...product,
-            quantity: 1
-        });
+        cart.push({ ...product, quantity: 1 });
     }
-    
-    updateCartCount();
-    saveCartToStorage();
-    showNotification(`${product.name} added to cart!`);
+
+    saveCart();
+    updateCart();
+    showToast(`"${product.name}" added to cart!`);
 }
 
-// Remove item from cart
-function removeFromCart(productId) {
-    cart = cart.filter(item => item.id !== productId);
-    updateCartCount();
-    saveCartToStorage();
-    renderCart();
-}
+// Update Cart UI
+function updateCart() {
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-// Update cart count display
-function updateCartCount() {
-    const count = cart.reduce((total, item) => total + item.quantity, 0);
-    document.getElementById('cart-count').textContent = count;
-}
+    cartCount.textContent = totalItems;
+    cartTotal.textContent = `$${totalPrice.toFixed(2)}`;
 
-// Render cart items in modal
-function renderCart() {
-    const cartItemsContainer = document.getElementById('cart-items');
-    const totalPriceElement = document.getElementById('total-price');
-    
     if (cart.length === 0) {
-        cartItemsContainer.innerHTML = '<p style="text-align: center; padding: 2rem; color: #6b7280;">Your cart is empty</p>';
-        totalPriceElement.textContent = '0.00';
-        return;
-    }
-    
-    cartItemsContainer.innerHTML = '';
-    let total = 0;
-    
-    cart.forEach(item => {
-        const itemTotal = item.price * item.quantity;
-        total += itemTotal;
-        
-        const cartItem = document.createElement('div');
-        cartItem.className = 'cart-item';
-        cartItem.innerHTML = `
-            <div class="cart-item-info">
-                <h4>${item.name}</h4>
-                <p>$${item.price.toFixed(2)} × ${item.quantity}</p>
-            </div>
-            <div>
-                <strong>$${itemTotal.toFixed(2)}</strong>
-                <button class="cart-item-remove" onclick="removeFromCart(${item.id})">Remove</button>
+        cartItems.innerHTML = `
+            <div class="empty-cart">
+                <i class="fas fa-shopping-cart"></i>
+                <p>Your cart is empty</p>
             </div>
         `;
-        cartItemsContainer.appendChild(cartItem);
+    } else {
+        cartItems.innerHTML = cart.map(item => `
+            <div class="cart-item">
+                <div class="cart-item-image">
+                    <img src="${item.image}" alt="${item.name}">
+                </div>
+                <div class="cart-item-details">
+                    <h4 class="cart-item-title">${item.name}</h4>
+                    <span class="cart-item-price">$${item.price.toFixed(2)}</span>
+                    <div class="quantity-controls">
+                        <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
+                        <span class="quantity">${item.quantity}</span>
+                        <button class="qty-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
+                        <button class="remove-item" onclick="removeFromCart(${item.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    localStorage.setItem('cart', JSON.stringify(cart));
+}
+
+// Update Quantity
+function updateQuantity(id, change) {
+    const item = cart.find(i => i.id === id);
+    if (item) {
+        item.quantity += change;
+        if (item.quantity <= 0) {
+            removeFromCart(id);
+        } else {
+            saveCart();
+            updateCart();
+        }
+    }
+}
+
+// Remove from Cart
+function removeFromCart(id) {
+    cart = cart.filter(item => item.id !== id);
+    saveCart();
+    updateCart();
+    showToast('Item removed from cart');
+}
+
+// Save Cart
+function saveCart() {
+    localStorage.setItem('cart', JSON.stringify(cart));
+}
+
+// Show Toast
+function showToast(message) {
+    toastMsg.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// Setup Event Listeners
+function setupEventListeners() {
+    // Cart toggle
+    cartBtn.addEventListener('click', () => {
+        cartSidebar.classList.add('active');
+        cartOverlay.classList.add('active');
     });
-    
-    totalPriceElement.textContent = total.toFixed(2);
+
+    closeCart.addEventListener('click', closeCartSidebar);
+    cartOverlay.addEventListener('click', closeCartSidebar);
+
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentCategory = btn.dataset.category;
+            renderProducts(searchInput.value);
+        });
+    });
+
+    // Sort select
+    document.getElementById('sortSelect').addEventListener('change', (e) => {
+        currentSort = e.target.value;
+        renderProducts(searchInput.value);
+    });
+
+    // Search
+    searchInput.addEventListener('input', (e) => {
+        renderProducts(e.target.value);
+    });
+
+    // Checkout
+    checkoutBtn.addEventListener('click', () => {
+        if (cart.length === 0) {
+            showToast('Your cart is empty!');
+            return;
+        }
+        closeCartSidebar();
+        checkoutModal.classList.add('active');
+        document.getElementById('orderNum').textContent = '#' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    });
+
+    // Close modal
+    closeModal.addEventListener('click', () => {
+        checkoutModal.classList.remove('active');
+    });
+
+    checkoutModal.addEventListener('click', (e) => {
+        if (e.target === checkoutModal) {
+            checkoutModal.classList.remove('active');
+        }
+    });
 }
 
-// Checkout function
-function checkout() {
-    if (cart.length === 0) {
-        alert('Your cart is empty!');
-        return;
-    }
+// Close Cart Sidebar
+function closeCartSidebar() {
+    cartSidebar.classList.remove('active');
+    cartOverlay.classList.remove('active');
+}
+
+// Checkout Steps
+function nextStep(step) {
+    document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
     
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    alert(`Thank you for your purchase!\nTotal: $${total.toFixed(2)}\n\nThis is a demo website. No actual payment will be processed.`);
-    
-    // Clear cart
+    document.getElementById(`step${step}`).classList.add('active');
+    document.querySelector(`[data-step="${step}"]`).classList.add('active');
+}
+
+// Reset Shop
+function resetShop() {
     cart = [];
-    updateCartCount();
-    saveCartToStorage();
-    document.getElementById('cart-modal').style.display = 'none';
+    saveCart();
+    updateCart();
+    checkoutModal.classList.remove('active');
+    showToast('Thank you for shopping with us!');
 }
 
-// Show notification
-function showNotification(message) {
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: #10b981;
-        color: white;
-        padding: 1rem 2rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        z-index: 3000;
-        animation: slideIn 0.3s ease;
-    `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 2000);
+// Placeholder functions
+function toggleWishlist(id) {
+    showToast('Added to wishlist!');
 }
 
-// Local storage functions
-function saveCartToStorage() {
-    localStorage.setItem('shoppingCart', JSON.stringify(cart));
+function quickView(id) {
+    const product = products.find(p => p.id === id);
+    showToast(`Quick view: ${product.name}`);
 }
-
-function loadCartFromStorage() {
-    const savedCart = localStorage.getItem('shoppingCart');
-    if (savedCart) {
-        cart = JSON.parse(savedCart);
-        updateCartCount();
-    }
-}
-
-// Add CSS animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    @keyframes slideOut {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(style);
